@@ -88,6 +88,8 @@ USE_I18N = True
 
 USE_TZ = True
 
+DATA_DIR_PATH = os.path.join(BASE_DIR.parent, 'data')
+
 
 STATIC_URL = 'static/'
 

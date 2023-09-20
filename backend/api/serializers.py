@@ -16,8 +16,10 @@ class TagSerializer(serializers.ModelSerializer):
 
 
 class RecipeSerializer(serializers.ModelSerializer):
-    tag = TagSerializer(many=True)
-    ingredient = IngredientSerializer(many=True)
+
+    def create(self, validated_data):
+
+        return Recipe.objects.create(**validated_data)
 
     class Meta:
         model = Recipe

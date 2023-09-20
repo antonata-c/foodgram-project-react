@@ -18,19 +18,16 @@ class Ingredient(models.Model):
 class Recipe(models.Model):
     name = models.CharField(max_length=200, null=False)
     text = models.TextField(null=False)
-    image = models.ImageField(upload_to='recipes/images/', null=False)
+    image = models.ImageField(upload_to='recipes/images/', blank=True)
     cooking_time = models.IntegerField(validators=(MinValueValidator(1),))
     ingredients = models.ManyToManyField(Ingredient,
                                          through='RecipeIngredient')
-    tags = models.ManyToManyField(Tag,
-                                  through='RecipeTag')
+    tags = models.ManyToManyField(Tag)
 
 
 class RecipeIngredient(models.Model):
     recipe = models.ForeignKey(Recipe, on_delete=models.CASCADE)
     ingredient = models.ForeignKey(Ingredient, on_delete=models.CASCADE)
+    amount = models.IntegerField(default=0)
 
 
-class RecipeTag(models.Model):
-    recipe = models.ForeignKey(Recipe, on_delete=models.CASCADE)
-    tag = models.ForeignKey(Tag, on_delete=models.CASCADE)
