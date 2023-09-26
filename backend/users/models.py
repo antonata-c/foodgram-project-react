@@ -2,7 +2,7 @@ from django.contrib.auth.models import AbstractUser
 from django.core.validators import RegexValidator
 from django.db import models
 
-
+# TODO: verboses, consts to settings
 class User(AbstractUser):
     USER = 'user'
     ADMIN = 'admin'
@@ -26,9 +26,12 @@ class User(AbstractUser):
         unique=True,
         verbose_name='Логин'
     )
-    first_name = models.CharField(max_length=150, blank=False, null=False, verbose_name='Имя')
-    last_name = models.CharField(max_length=150, blank=False, null=False, verbose_name='Фамилия')
-    password = models.CharField(max_length=150, blank=False, null=False, verbose_name='Пароль')
+    first_name = models.CharField(max_length=150, blank=False,
+                                  null=False, verbose_name='Имя')
+    last_name = models.CharField(max_length=150, blank=False,
+                                 null=False, verbose_name='Фамилия')
+    password = models.CharField(max_length=150, blank=False,
+                                null=False, verbose_name='Пароль')
     role = models.CharField(
         max_length=max([len(verbose) for _, verbose in ROLES]),
         choices=ROLES,
