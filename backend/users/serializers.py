@@ -1,4 +1,5 @@
 from rest_framework import serializers
+from rest_framework.validators import ValidationError
 
 from .models import User
 
@@ -27,3 +28,9 @@ class SetPasswordSerializer(serializers.Serializer):
     current_password = serializers.CharField(max_length=150, required=True)
     new_password = serializers.CharField(max_length=150, required=True)
 
+    def validate(self, data):
+        if not self.context.get('request').user.check_password(
+                data.get("current_password")
+        ):
+            raise ValidationError({"current_password": ["Wrong password."]})
+        return data
