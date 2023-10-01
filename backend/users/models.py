@@ -2,6 +2,7 @@ from django.contrib.auth.models import AbstractUser
 from django.core.validators import RegexValidator
 from django.db import models
 
+
 # TODO: verboses, consts to settings
 class User(AbstractUser):
     USER = 'user'
@@ -50,3 +51,21 @@ class User(AbstractUser):
 
     def __str__(self):
         return self.username[:15]
+
+
+class Follow(models.Model):
+    user = models.ForeignKey(User,
+                             related_name='follower',
+                             on_delete=models.CASCADE)
+    author = models.ForeignKey(User,
+                               related_name='following',
+                               on_delete=models.CASCADE)
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(
+                fields=['user', 'author'],
+                name='unique_follow'),
+            models.CheckConstraint(
+                check=~models.Q(user=models.F('author')),
+                name='check_self_follow')]

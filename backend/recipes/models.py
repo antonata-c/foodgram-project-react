@@ -19,14 +19,11 @@ class Ingredient(models.Model):
                                         null=False,
                                         blank=False)
 
-    class Meta:
-        default_related_name = 'ingredients'
-
 
 class Recipe(models.Model):
-    # author = models.ForeignKey(User,
-    #                            related_name='recipes',
-    #                            on_delete=models.CASCADE)
+    author = models.ForeignKey(User,
+                               related_name='recipes',
+                               on_delete=models.CASCADE)
     name = models.CharField(max_length=200, null=False)
     text = models.TextField(null=False)
     image = models.ImageField(upload_to='recipes/images/',
