@@ -4,7 +4,6 @@ from rest_framework.validators import ValidationError
 
 from recipes.models import Recipe
 from .models import User, Follow
-from api.serializers import RecipeFollowSerializer
 
 
 class UserSerializer(serializers.ModelSerializer):
@@ -26,7 +25,7 @@ class UserSerializer(serializers.ModelSerializer):
         )
         extra_kwargs = {
             'password': {'write_only': True},
-            #'is_subscribed': {'read_only': True}
+            # 'is_subscribed': {'read_only': True}
         }
 
 
@@ -85,3 +84,9 @@ class SetPasswordSerializer(serializers.Serializer):
         ):
             raise ValidationError({"current_password": ["Wrong password."]})
         return data
+
+
+class RecipeFollowSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Recipe
+        fields = ('id', 'name', 'image', 'cooking_time')

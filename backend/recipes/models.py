@@ -43,3 +43,30 @@ class RecipeIngredient(models.Model):
                                    related_name='recipe_ingredient',
                                    on_delete=models.CASCADE)
     amount = models.IntegerField()
+
+
+class Favorite(models.Model):
+    user = models.ForeignKey(
+        User,
+        related_name='favorite',
+        on_delete=models.CASCADE
+    )
+    recipe = models.OneToOneField(
+        Recipe,
+        related_name='favorite',
+        on_delete=models.CASCADE,
+    )
+
+
+class ShoppingCart(models.Model):
+    user = models.ForeignKey(
+        User,
+        related_name='shopping_cart',
+        on_delete=models.CASCADE,
+    )
+    recipe = models.OneToOneField(
+        Recipe,
+        related_name='shopping_cart',
+        on_delete=models.CASCADE,
+    )
+

@@ -1,16 +1,16 @@
 from django.shortcuts import get_object_or_404
-from rest_framework import viewsets
 from rest_framework.decorators import action
 from rest_framework.response import Response
 from rest_framework.status import HTTP_201_CREATED, HTTP_204_NO_CONTENT
 
 from .models import User, Follow
+from .mixins import CreateRetrieveListMixin
 from .serializers import (UserSerializer,
                           SetPasswordSerializer,
                           FollowSerializer)
 
 
-class UserViewSet(viewsets.ModelViewSet):
+class UserViewSet(CreateRetrieveListMixin):
     queryset = User.objects.all()
     serializer_class = UserSerializer
 
@@ -50,3 +50,12 @@ class UserViewSet(viewsets.ModelViewSet):
                           author=author).delete()
         return Response('Успешная отписка',
                         status=HTTP_204_NO_CONTENT)
+
+    @action(detail=False,
+            methods=('get',))
+    def subscriptions(self, request):
+        return Response(FollowSerializer(
+            Follow.objects.filter(user=self.request.user),
+            context={'request': request, 'author': self.request.user},
+            many=True
+        ).data)

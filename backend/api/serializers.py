@@ -1,10 +1,14 @@
 import base64
 
 from django.core.files.base import ContentFile
-from django.shortcuts import get_object_or_404
 from rest_framework import serializers
+from rest_framework.status import HTTP_400_BAD_REQUEST
+from rest_framework.validators import ValidationError
 
-from recipes.models import Recipe, Ingredient, Tag, RecipeIngredient
+from recipes.models import (Recipe, Ingredient,
+                            Tag, RecipeIngredient,
+                            Favorite, ShoppingCart)
+from users.serializers import UserSerializer
 
 
 class Base64ImageField(serializers.ImageField):
@@ -16,6 +20,38 @@ class Base64ImageField(serializers.ImageField):
             data = ContentFile(base64.b64decode(imgstr), name='temp.' + ext)
 
         return super().to_internal_value(data)
+
+
+class ShoppingFavoriteAbstractSerializer(serializers.ModelSerializer):
+    id = serializers.PrimaryKeyRelatedField(
+        source='recipe',
+        read_only=True
+    )
+    name = serializers.CharField(
+        source='recipe.name',
+        read_only=True
+    )
+    image = serializers.ImageField(
+        source='recipe.image',
+        read_only=True
+    )
+    cooking_time = serializers.IntegerField(
+        source='recipe.cooking_time',
+        read_only=True
+    )
+
+    def validate(self, data, detail=None, model=None):
+        if model.objects.filter(
+                user=self.context.get('user'),
+                recipe=self.context.get('recipe')
+        ).exists():
+            raise ValidationError(
+                detail=f'Выбранный рецепт уже есть в {detail}.',
+                code=HTTP_400_BAD_REQUEST)
+        return data
+
+    class Meta:
+        abstract = True
 
 
 class IngredientSerializer(serializers.ModelSerializer):
@@ -48,12 +84,14 @@ class RecipeGetSerializer(serializers.ModelSerializer):
         many=True
     )
     tags = TagSerializer(many=True)
+    author = UserSerializer()
 
     class Meta:
         model = Recipe
         fields = (
             'id',
             'tags',
+            'author',
             'ingredients',
             # 'is_favorited',
             # 'is_in_shopping_cart',
@@ -79,6 +117,9 @@ class RecipeCreateSerializer(serializers.ModelSerializer):
     ingredients = RecipeIngredientSerializer(required=True, many=True)
     tags = serializers.SlugRelatedField(
         many=True, queryset=Tag.objects.all(), slug_field='id'
+    )
+    author = serializers.HiddenField(
+        default=serializers.CurrentUserDefault()
     )
 
     def to_representation(self, instance):
@@ -128,10 +169,27 @@ class RecipeCreateSerializer(serializers.ModelSerializer):
             'image',
             'text',
             'cooking_time',
+            'author'
         ]
 
 
-class RecipeFollowSerializer(serializers.ModelSerializer):
+class FavoriteSerializer(ShoppingFavoriteAbstractSerializer):
+    def validate(self, data):
+        return super().validate(data,
+                                detail='избранном',
+                                model=Favorite)
+
     class Meta:
-        model = Recipe
+        model = Favorite
+        fields = ('id', 'name', 'image', 'cooking_time')
+
+
+class ShoppingCartSerializer(ShoppingFavoriteAbstractSerializer):
+    def validate(self, data):
+        return super().validate(data,
+                                detail='списке покупок',
+                                model=ShoppingCart)
+
+    class Meta:
+        model = ShoppingCart
         fields = ('id', 'name', 'image', 'cooking_time')
