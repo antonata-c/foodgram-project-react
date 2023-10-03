@@ -1,3 +1,6 @@
+from collections import defaultdict
+
+from django.http import HttpResponse
 from django.shortcuts import get_object_or_404
 from rest_framework import viewsets
 from rest_framework.decorators import action
@@ -8,7 +11,8 @@ from rest_framework.status import (HTTP_201_CREATED,
 from .serializers import (RecipeCreateSerializer, IngredientSerializer,
                           RecipeGetSerializer, TagSerializer,
                           FavoriteSerializer, ShoppingCartSerializer)
-from recipes.models import Recipe, Ingredient, Tag, Favorite, ShoppingCart
+from recipes.models import (Recipe, Ingredient, Tag,
+                            Favorite, ShoppingCart, RecipeIngredient)
 
 
 def post_delete(**kwargs):
@@ -59,10 +63,25 @@ class RecipeViewSet(viewsets.ModelViewSet):
             serializer=ShoppingCartSerializer
         )
 
-    # @action(detail=False,
-    #         methods=('get',))
-    # def download_shopping_cart(self, request):
-# TODO: Дописать метод, пагинация, пермишены, вербосы, фильтры, поиск
+    # TODO: Дописать метод, пагинация, пермишены, вербосы, фильтры, поиск
+    @action(detail=False,
+            methods=('get',))
+    def download_shopping_cart(self, request):
+        shopping_cart_txt = f'Список покупок пользователя {self.request.user}:'
+        recipes_ingredients = RecipeIngredient.objects.filter(
+            recipe__shopping_cart__user=self.request.user
+        ).values('ingredient__name', 'ingredient__measurement_unit', 'amount')
+        fixed_ingredients = defaultdict()
+        for ingredient in recipes_ingredients:
+            if fixed_ingredients.get(ingredient['ingredient__name']) is None:
+                fixed_ingredients[ingredient['ingredient__name']] = 0
+                fixed_ingredients[
+                    ingredient['ingredient__name']
+                ] = ingredient['ingredient__measurement_unit']
+            fixed_ingredients[
+                ingredient['ingredient__name']
+            ] += ingredient['amount']
+        print(fixed_ingredients)
 
 
 class IngredientViewSet(viewsets.ReadOnlyModelViewSet):
