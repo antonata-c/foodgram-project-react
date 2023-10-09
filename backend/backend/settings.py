@@ -1,13 +1,17 @@
 import os
 from pathlib import Path
 
+from dotenv import load_dotenv
+
 BASE_DIR = Path(__file__).resolve().parent.parent
 
-SECRET_KEY = 'django-insecure-y8u97#=gedy0gse-+(99+%o86p4(r#&vuy!1^=pfsmuu)yk5te'
+load_dotenv()
 
-DEBUG = True
+SECRET_KEY = os.getenv('DJANGO_SECRET_KEY', '')
 
-ALLOWED_HOSTS = []
+DEBUG = True if os.getenv('DEBUG', False) else False
+
+ALLOWED_HOSTS = os.getenv('ALLOWED_HOSTS', '*').split()
 
 
 INSTALLED_APPS = [
@@ -20,6 +24,7 @@ INSTALLED_APPS = [
     'rest_framework',
     'rest_framework.authtoken',
     'djoser',
+    'django_filters',
     'users.apps.UsersConfig',
     'recipes.apps.RecipesConfig',
     'api.apps.ApiConfig',
@@ -56,12 +61,24 @@ TEMPLATES = [
 WSGI_APPLICATION = 'backend.wsgi.application'
 
 
-DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': BASE_DIR / 'db.sqlite3',
+if os.getenv('DB_SQLITE', False):
+    DATABASES = {
+        'default': {
+            'ENGINE': 'django.db.backends.sqlite3',
+            'NAME': BASE_DIR / 'db.sqlite3',
+        }
     }
-}
+else:
+    DATABASES = {
+        'default': {
+            'ENGINE': 'django.db.backends.postgresql',
+            'NAME': os.getenv('POSTGRES_DB', 'django'),
+            'USER': os.getenv('POSTGRES_USER', 'django-user'),
+            'PASSWORD': os.getenv('POSTGRES_PASSWORD', ''),
+            'HOST': os.getenv('DB_NAME', ''),
+            'PORT': os.getenv('DB_PORT', 5432)
+        }
+    }
 
 
 AUTH_PASSWORD_VALIDATORS = [
@@ -100,12 +117,21 @@ USE_I18N = True
 
 USE_TZ = True
 
-DATA_DIR_PATH = os.path.join(BASE_DIR.parent, 'data')
-
+DATA_DIR_PATH = os.path.join(BASE_DIR, 'data')
 
 STATIC_URL = 'static/'
+STATIC_ROOT = BASE_DIR / 'static'
 
 MEDIA_URL = '/media/'
 MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
+
+
+# consts
+EMAIL_LENGTH = 254
+PERSONAL_FIELDS_LENGTH = 150
+REPR_SIZE = 15
+RECIPES_NAME_SIZE = 200
+COLOR_SIZE = 7
+MIN_VALUE = 1

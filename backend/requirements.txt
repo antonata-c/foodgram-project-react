@@ -4,3 +4,6 @@ Pillow==9.0.0
 djangorestframework-simplejwt==4.7.2
 djoser==2.1.0
 gunicorn==20.1.0
+django-filter==21.1
+psycopg2-binary==2.9.3
+python-dotenv

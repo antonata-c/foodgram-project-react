@@ -19,8 +19,7 @@ class Command(BaseCommand):
             data = json.load(file)
         for ingredient_data in data:
             try:
-                data_to_save = Ingredient(**ingredient_data)
-                data_to_save.save()
+                Ingredient(**ingredient_data).save()
             except ValueError as error:
                 print(f'Ошибка: {error}\nЗапись не была загружена.')
                 return
