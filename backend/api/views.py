@@ -49,8 +49,6 @@ def post_delete(**kwargs):
                     status=HTTP_204_NO_CONTENT)
 
 
-# TODO: пофиксить удаление из избранного, картинку в апдейте и деплой + админка
-
 class RecipeViewSet(viewsets.ModelViewSet):
     queryset = Recipe.objects.all()
     permission_classes = (AdminOrAuthorOrReadOnly,)
