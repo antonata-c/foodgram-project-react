@@ -219,7 +219,8 @@ class RecipeCreateSerializer(serializers.ModelSerializer):
                 amount=ingredient.get('amount')
             )
         instance.tags.set(tags)
-        instance.image = validated_data.get('image')
+        if validated_data.get('image'):
+            instance.image = validated_data.get('image')
         instance.text = validated_data.get('text')
         instance.name = validated_data.get('name')
         instance.cooking_time = validated_data.get('cooking_time')
