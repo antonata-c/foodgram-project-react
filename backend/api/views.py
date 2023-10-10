@@ -48,6 +48,7 @@ def post_delete(**kwargs):
     return Response('Рецепт успешно удален',
                     status=HTTP_204_NO_CONTENT)
 
+
 # TODO: Админка + пофиксить выдачу медиа
 
 class RecipeViewSet(viewsets.ModelViewSet):
