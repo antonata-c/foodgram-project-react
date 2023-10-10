@@ -50,7 +50,6 @@ def post_delete(**kwargs):
 
 
 # TODO: Админка + пофиксить выдачу медиа
-
 class RecipeViewSet(viewsets.ModelViewSet):
     queryset = Recipe.objects.all()
     permission_classes = (AdminOrAuthorOrReadOnly,)
