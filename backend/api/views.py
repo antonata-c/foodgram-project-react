@@ -24,9 +24,12 @@ from .serializers import (FavoriteSerializer, FollowSerializer,
 
 
 def post_delete(**kwargs):
-    recipe = get_object_or_404(Recipe, id=kwargs.get('pk'))
     request = kwargs.get('request')
     if request.method == 'POST':
+        if not Recipe.objects.filter(id=kwargs.get('pk')).exists():
+            return Response('Выбранного рецепта не существует!',
+                            status=HTTP_400_BAD_REQUEST)
+        recipe = Recipe.objects.get(id=kwargs.get('pk'))
         serializer = kwargs.get('serializer')(
             data=kwargs.get('data'),
             context={'recipe': recipe, 'user': request.user}
@@ -35,13 +38,18 @@ def post_delete(**kwargs):
         serializer.save(user=request.user, recipe=recipe)
         return Response(serializer.data,
                         status=HTTP_201_CREATED)
-    if not kwargs.get('model').objects.filter(recipe=recipe).exists():
+    recipe = get_object_or_404(Recipe, id=kwargs.get('pk'))
+    if not kwargs.get('model').objects.filter(user=request.user,
+                                              recipe=recipe).exists():
         return Response('Рецепта нет в списке',
                         status=HTTP_400_BAD_REQUEST)
-    kwargs.get('model').objects.get(recipe=recipe).delete()
+    kwargs.get('model').objects.get(user=request.user,
+                                    recipe=recipe).delete()
     return Response('Рецепт успешно удален',
                     status=HTTP_204_NO_CONTENT)
 
+
+# TODO: пофиксить удаление из избранного, картинку в апдейте и деплой + админка
 
 class RecipeViewSet(viewsets.ModelViewSet):
     queryset = Recipe.objects.all()

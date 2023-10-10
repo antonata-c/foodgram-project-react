@@ -94,7 +94,7 @@ class Favorite(models.Model):
         on_delete=models.CASCADE,
         verbose_name='Владелец избранного'
     )
-    recipe = models.OneToOneField(
+    recipe = models.ForeignKey(
         Recipe,
         related_name='favorite',
         on_delete=models.CASCADE,
@@ -113,7 +113,7 @@ class ShoppingCart(models.Model):
         on_delete=models.CASCADE,
         verbose_name='Владелец списка покупок'
     )
-    recipe = models.OneToOneField(
+    recipe = models.ForeignKey(
         Recipe,
         related_name='shopping_cart',
         on_delete=models.CASCADE,

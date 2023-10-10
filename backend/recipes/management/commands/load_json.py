@@ -24,4 +24,3 @@ class Command(BaseCommand):
                 print(f'Ошибка: {error}\nЗапись не была загружена.')
                 return
         print('Все данные были успешно загружены')
-
