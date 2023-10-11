@@ -119,10 +119,10 @@ USE_TZ = True
 
 DATA_DIR_PATH = os.path.join(BASE_DIR, 'data')
 
-STATIC_URL = 'static/'
+STATIC_URL = '/backend_static/'
 STATIC_ROOT = BASE_DIR / 'static'
 
-MEDIA_URL = '/media/'
+MEDIA_URL = '/backend_media/'
 MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
