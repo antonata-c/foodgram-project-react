@@ -98,7 +98,7 @@ jobs:
         key: ${{ secrets.SSH_KEY }}
         passphrase: ${{ secrets.SSH_PASSPHRASE }}
         source: "infra/docker-compose.production.yml"
-        target: "foodgram-project-react"
+        target: "foodgram-project-react/infra/"
     - name: Executing ssh commands to deploy
       uses: appleboy/ssh-action@master
       with:
@@ -109,7 +109,7 @@ jobs:
         script: |
           cd foodgram-project-react/infra
           sudo docker compose -f docker-compose.production.yml pull
-          sudo docker compose -f docker-compose.production.yml down
+          sudo docker compose -f docker-compose.production.yml down --rmi local
           sudo docker compose -f docker-compose.production.yml up -d
           sudo docker compose -f docker-compose.production.yml exec backend python manage.py migrate
           sudo docker compose -f docker-compose.production.yml exec backend python manage.py collectstatic --noinput
