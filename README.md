@@ -1,5 +1,5 @@
 # praktikum_new_diplom
-**ip: 158.160.17.220**
+**domain: http://foodgramanton.ddns.net**
 
 **email: admin@ya.ru**
 
