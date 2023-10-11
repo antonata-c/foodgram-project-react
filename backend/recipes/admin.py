@@ -9,12 +9,7 @@ class RecipeAdmin(admin.ModelAdmin):
     list_filter = ('name', 'author', 'tags')
 
 
-
-
 class IngredientAdmin(admin.ModelAdmin):
-    """
-    Админ-зона ингридиентов.
-    """
     list_display = ('name', 'measurement_unit')
     list_filter = ('name',)
 
