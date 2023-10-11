@@ -86,6 +86,10 @@ class RecipeIngredient(models.Model):
         MinValueValidator(settings.MIN_VALUE),
     ))
 
+    class Meta:
+        verbose_name = 'Ингредиент в рецепте'
+        verbose_name_plural = 'Ингредиенты в рецептах'
+
 
 class Favorite(models.Model):
     user = models.ForeignKey(
