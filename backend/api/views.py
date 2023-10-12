@@ -12,13 +12,13 @@ from recipes.models import (Favorite, Ingredient, Recipe, RecipeIngredient,
                             ShoppingCart, Tag)
 from users.models import Follow, User
 
-from .filters import CustomSearchFilter
+from .filters import NameSearchFilter
 from .mixins import CreateRetrieveListMixin
 from .pagination import CustomPageNumberPagination
 from .permissions import AdminOrAuthorOrReadOnly
-from .serializers import (FavoriteSerializer, FollowSerializer,
-                          IngredientSerializer, RecipeCreateSerializer,
-                          RecipeGetSerializer, SetPasswordSerializer,
+from .serializers import (FavoriteSerializer, FollowGetSerializer,
+                          FollowPostSerializer, IngredientSerializer,
+                          RecipeCreateSerializer, RecipeGetSerializer,
                           ShoppingCartSerializer, TagSerializer,
                           UserSerializer)
 
@@ -49,7 +49,6 @@ def post_delete(**kwargs):
                     status=HTTP_204_NO_CONTENT)
 
 
-# TODO: Админка + пофиксить выдачу медиа + воркфлоу
 class RecipeViewSet(viewsets.ModelViewSet):
     queryset = Recipe.objects.all()
     permission_classes = (AdminOrAuthorOrReadOnly,)
@@ -154,7 +153,7 @@ class RecipeViewSet(viewsets.ModelViewSet):
 class IngredientViewSet(viewsets.ReadOnlyModelViewSet):
     queryset = Ingredient.objects.all()
     serializer_class = IngredientSerializer
-    filter_backends = (CustomSearchFilter,)
+    filter_backends = (NameSearchFilter,)
     search_fields = ('^name',)
 
 
@@ -196,13 +195,9 @@ class UserViewSet(CreateRetrieveListMixin):
     def subscribe(self, request, pk):
         author = get_object_or_404(User, id=pk)
         if self.request.method == 'POST':
-            context = {
-                'request': request,
-                'author': author
-            }
-            serializer = FollowSerializer(
+            serializer = FollowPostSerializer(
                 data=request.data,
-                context=context
+                context={'request': request, 'author': author}
             )
             serializer.is_valid(raise_exception=True)
             serializer.save(user=self.request.user, author=author)
@@ -221,7 +216,7 @@ class UserViewSet(CreateRetrieveListMixin):
             methods=('get',),
             permission_classes=(IsAuthenticated,))
     def subscriptions(self, request):
-        serializer = FollowSerializer(
+        serializer = FollowGetSerializer(
             self.paginate_queryset(
                 Follow.objects.filter(user=self.request.user).order_by('id'),
             ),
