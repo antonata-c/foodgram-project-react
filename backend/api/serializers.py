@@ -19,8 +19,8 @@ class RecipeShortSerializer(serializers.ModelSerializer):
 class ShoppingFavoriteAbstractSerializer(serializers.ModelSerializer):
     def validate(self, data):
         if self.Meta.model.objects.filter(
-                user=self.context.get('user'),
-                recipe=self.context.get('recipe')
+                user=data.get('user'),
+                recipe=data.get('recipe')
         ).exists():
             raise ValidationError(
                 detail='Выбранный рецепт уже есть в '
@@ -29,20 +29,12 @@ class ShoppingFavoriteAbstractSerializer(serializers.ModelSerializer):
         return data
 
     def to_representation(self, instance):
-        return RecipeShortSerializer(instance, context=self.context)
+        return RecipeShortSerializer(instance.recipe,
+                                     context=self.context).data
 
 
 class UserSerializer(serializers.ModelSerializer):
     is_subscribed = serializers.SerializerMethodField()
-
-    # def create(self, validated_data):
-    #     return User.objects.create_user(**validated_data)
-    #
-    # def to_representation(self, instance):
-    #     to_repr = super(UserSerializer, self).to_representation(instance)
-    #     if self.context.get('request').method == 'POST':
-    #         to_repr.pop('is_subscribed')
-    #     return to_repr
 
     def get_is_subscribed(self, obj):
         request = self.context.get('request')
@@ -115,13 +107,17 @@ class RecipeGetSerializer(serializers.ModelSerializer):
         request = self.context.get('request')
         return (request
                 and request.user.is_authenticated
-                and request.user.favorite.filter(recipe=obj).exists())
+                and Favorite.objects.filter(user=request.user,
+                                          recipe=obj).exists())
+                # and obj.is_favorited)
 
     def get_is_in_shopping_cart(self, obj):
         request = self.context.get('request')
         return (request
                 and request.user.is_authenticated
-                and request.user.shopping_cart.filter(recipe=obj).exists())
+                and ShoppingCart.objects.filter(user=request.user,
+                                          recipe=obj).exists())
+                # and obj.is_in_shopping_cart)
 
 
 class RecipeIngredientSerializer(serializers.ModelSerializer):
@@ -201,6 +197,10 @@ class RecipeCreateSerializer(serializers.ModelSerializer):
         return super().update(instance, validated_data)
 
     def validate(self, data):
+        if not data.get('tags'):
+            raise ValidationError(
+                {'tags': 'Поле не может быть пустым'}
+            )
         if not data.get('ingredients'):
             raise ValidationError(
                 {'ingredients': 'Поле не может быть пустым'}
@@ -213,30 +213,34 @@ class RecipeCreateSerializer(serializers.ModelSerializer):
             )
         return data
 
-    def validate_tags(self, value):
+    def validate_image(self, value):
         if not value:
             raise ValidationError(
-                {'tags': 'Поле не может быть пустым'})
+                {'image': 'Поле не может быть пустым'}
+            )
+        return value
+
+    def validate_tags(self, value):
         if list(set(value)) != value:
             raise ValidationError(
                 {'tags': 'В поле не может быть повторений'})
         return value
 
 
-# class FavoriteSerializer(ShoppingFavoriteAbstractSerializer):
-#     class Meta:
-#         model = Favorite
-#         fields = ('id', 'name', 'image', 'cooking_time')
-#
-#
-# class ShoppingCartSerializer(ShoppingFavoriteAbstractSerializer):
-#     class Meta:
-#         model = ShoppingCart
-#         fields = ('id', 'name', 'image', 'cooking_time')
-# TODO: Разобраться с выше и продолжить тестить и фиксить
+class FavoriteSerializer(ShoppingFavoriteAbstractSerializer):
+    class Meta:
+        model = Favorite
+        fields = ('user', 'recipe')
+
+
+class ShoppingCartSerializer(ShoppingFavoriteAbstractSerializer):
+    class Meta:
+        model = ShoppingCart
+        fields = ('user', 'recipe')
+
 
 class FollowGetSerializer(UserSerializer):
-    recipes_count = serializers.ReadOnlyField(source='author.recipes.count')
+    recipes_count = serializers.ReadOnlyField(source='recipes.count')
     recipes = serializers.SerializerMethodField()
 
     class Meta:
@@ -251,7 +255,9 @@ class FollowGetSerializer(UserSerializer):
     def get_recipes(self, obj):
         request = self.context.get('request')
         recipes_limit = request.query_params.get('recipes_limit')
-        queryset = self.context.get('author').recipes
+        queryset = get_object_or_404(User,
+                                     pk=self.context.get('author')
+                                     ).recipes.all()
         if recipes_limit:
             try:
                 limit = int(request.query_params.get('recipes_limit'))
@@ -266,41 +272,23 @@ class FollowGetSerializer(UserSerializer):
 class FollowPostSerializer(serializers.ModelSerializer):
     class Meta:
         model = Follow
-        fields = (
-            'email', 'id',
-            'username', 'first_name',
-            'last_name', 'is_subscribed',
-            'recipes', 'recipes_count'
-        )
+        fields = ('user', 'author')
 
     def to_representation(self, instance):
-        return FollowGetSerializer(
-            instance,
-            context=self.context
-        )
+        return FollowGetSerializer(instance.author,
+                                   context=self.context).data
 
     def validate(self, data):
-        user = self.context.get('request').user
-        if user == self.context.get('author'):
+        user = data.get('user')
+        author = data.get('author')
+        if user == author:
             raise ValidationError(
                 detail='Самоподписка запрещена.',
                 code=HTTP_400_BAD_REQUEST)
         if Follow.objects.filter(
-                author=self.context.get('author'),
+                author=author,
                 user=user).exists():
             raise ValidationError(
                 detail='Подписка на этого пользователя уже существует.',
                 code=HTTP_400_BAD_REQUEST)
         return data
-
-# class SetPasswordSerializer(serializers.Serializer):
-#     model = User
-#     current_password = serializers.CharField(max_length=150, required=True)
-#     new_password = serializers.CharField(max_length=150, required=True)
-#
-#     def validate(self, data):
-#         if not self.context.get('request').user.check_password(
-#                 data.get("current_password")
-#         ):
-#             raise ValidationError({"current_password": ["Неверный пароль!"]})
-#         return data

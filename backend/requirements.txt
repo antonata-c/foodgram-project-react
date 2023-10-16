@@ -8,3 +8,4 @@ django-filter==21.1
 psycopg2-binary==2.9.3
 python-dotenv
 drf-extra-fields==3.7.0
+django-colorfield==0.10.1
