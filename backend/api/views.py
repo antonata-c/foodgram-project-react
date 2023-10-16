@@ -1,4 +1,4 @@
-from django.db.models import Sum, OuterRef, Exists
+from django.db.models import Sum
 from django.http import HttpResponse
 from django.shortcuts import get_object_or_404
 from djoser.views import UserViewSet as DjoserUserViewSet
@@ -7,20 +7,18 @@ from rest_framework.decorators import action
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.status import (HTTP_201_CREATED, HTTP_204_NO_CONTENT,
-                                   HTTP_400_BAD_REQUEST, HTTP_404_NOT_FOUND)
+                                   HTTP_400_BAD_REQUEST)
 
 from recipes.models import (Favorite, Ingredient, Recipe, RecipeIngredient,
                             ShoppingCart, Tag)
 from users.models import Follow, User
 from .filters import NameSearchFilter, recipe_filter
 from .pagination import CustomPageNumberPagination
-from .permissions import AdminOrAuthorOrReadOnly, \
-    IsAuthenticatedOrReadOnlyObject
-from .serializers import (FavoriteSerializer, FollowGetSerializer,
+from .permissions import AdminOrAuthorOrReadOnly
+from .serializers import (FavoriteSerializer, UserSerializer,
                           FollowPostSerializer, IngredientSerializer,
                           RecipeCreateSerializer, RecipeGetSerializer,
-                          ShoppingCartSerializer, TagSerializer,
-                          UserSerializer)
+                          ShoppingCartSerializer, TagSerializer,)
 
 
 class RecipeViewSet(viewsets.ModelViewSet):
@@ -173,7 +171,7 @@ class UserViewSet(DjoserUserViewSet):
     def subscribe(self, request, **kwargs):
         try:
             author_id = int(kwargs.get('id'))
-        except ValueError as exception:
+        except ValueError:
             return Response({"pk": "Id пользователя должен быть числом!"},
                             status=HTTP_400_BAD_REQUEST)
         get_object_or_404(User, pk=author_id)
@@ -196,7 +194,7 @@ class UserViewSet(DjoserUserViewSet):
     def unsubscribe(self, request, **kwargs):
         try:
             author = int(kwargs.get('id'))
-        except ValueError as exception:
+        except ValueError:
             return Response({"pk": "Id пользователя должен быть числом!"},
                             status=HTTP_400_BAD_REQUEST)
         author = get_object_or_404(User, pk=author)

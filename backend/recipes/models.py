@@ -2,8 +2,8 @@ from django.core.validators import MinValueValidator, MaxValueValidator
 from django.db import models
 from colorfield.fields import ColorField
 
-from backend.constants import (RECIPES_NAME_SIZE, COLOR_SIZE,
-                               REPR_SIZE, MIN_VALUE, MAX_P_INT_VALUE)
+from backend.constants import (RECIPES_NAME_SIZE, REPR_SIZE,
+                               MIN_VALUE, MAX_P_INT_VALUE)
 from users.models import User
 
 

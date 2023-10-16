@@ -24,7 +24,8 @@ class RecipeAdmin(admin.ModelAdmin):
         return obj.favorite.all().count()
 
     def get_ingredients(self, obj):
-        return ", ".join([p.ingredient.name for p in obj.recipe_ingredient.all()])
+        return ", ".join([p.ingredient.name
+                          for p in obj.recipe_ingredient.all()])
 
     def get_image(self, obj):
         return mark_safe(f'<img src={obj.image.url} width="80" height="60">')
