@@ -1,4 +1,4 @@
-from django.db.models import Sum
+from django.db.models import Sum, Exists, OuterRef
 from django.http import HttpResponse
 from django.shortcuts import get_object_or_404
 from djoser.views import UserViewSet as DjoserUserViewSet
@@ -18,26 +18,24 @@ from .permissions import AdminOrAuthorOrReadOnly
 from .serializers import (FavoriteSerializer, UserSerializer,
                           FollowPostSerializer, IngredientSerializer,
                           RecipeCreateSerializer, RecipeGetSerializer,
-                          ShoppingCartSerializer, TagSerializer,)
+                          ShoppingCartSerializer, TagSerializer, )
 
 
 class RecipeViewSet(viewsets.ModelViewSet):
-    queryset = (Recipe.objects
-                .select_related('author')
-                .prefetch_related('tags', 'ingredients')
-                # .annotate(
-                #     is_favorited=Exists(Favorite.objects.filter(
-                #         user=OuterRef('author'),
-                #         recipe=OuterRef('pk')
-                #     )),
-                #     is_in_shopping_cart=Exists(ShoppingCart.objects.filter(
-                #         user=OuterRef('author'),
-                #         recipe=OuterRef('pk')
-                #     )))
-                )
-    # По какой-то причине не получается это все подружить, пробовал
-    # через ReadOnly, SerializerMethod, ничего так и не вышло,
-    # хотя аннотируются они корректно, может быть можете дать подсказку?
+    queryset = (
+        Recipe.objects
+        .select_related('author')
+        .prefetch_related('tags', 'ingredients')
+        .annotate(
+            is_favorited=Exists(Favorite.objects.filter(
+                user=OuterRef('favorite__user'),
+                recipe=OuterRef('id')
+            )),
+            is_in_shopping_cart=Exists(ShoppingCart.objects.filter(
+                user=OuterRef('shopping_cart__user'),
+                recipe=OuterRef('id')
+            )))
+    )
     permission_classes = (AdminOrAuthorOrReadOnly,)
     http_method_names = ['get', 'post', 'patch', 'delete']
     pagination_class = CustomPageNumberPagination
