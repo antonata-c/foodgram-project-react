@@ -1,0 +1,27 @@
+[
+  {
+    "name": "Горячее",
+    "color": "#FF0000",
+    "slug": "meat"
+  },
+  {
+    "name": "Холодное",
+    "color": "#FF0000",
+    "slug": "cold"
+  },
+  {
+    "name": "Салат",
+    "color": "#FF0000",
+    "slug": "salad"
+  },
+  {
+    "name": "Суп",
+    "color": "#FF0000",
+    "slug": "soup"
+  },
+  {
+    "name": "Десерт",
+    "color": "#FF0000",
+    "slug": "dessert"
+  }
+]

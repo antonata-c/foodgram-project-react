@@ -9,10 +9,9 @@ load_dotenv()
 
 SECRET_KEY = os.getenv('DJANGO_SECRET_KEY', '')
 
-DEBUG = True if os.getenv('DEBUG', False) else False
+DEBUG = os.getenv('DEBUG', False) == 'True'
 
 ALLOWED_HOSTS = os.getenv('ALLOWED_HOSTS', '*').split()
-
 
 INSTALLED_APPS = [
     'django.contrib.admin',
@@ -60,7 +59,6 @@ TEMPLATES = [
 
 WSGI_APPLICATION = 'backend.wsgi.application'
 
-
 if os.getenv('DB_SQLITE', False):
     DATABASES = {
         'default': {
@@ -79,7 +77,6 @@ else:
             'PORT': os.getenv('DB_PORT', 5432)
         }
     }
-
 
 AUTH_PASSWORD_VALIDATORS = [
     {
@@ -108,6 +105,16 @@ REST_FRAMEWORK = {
     ],
 }
 
+DJOSER = {
+    'PERMISSIONS': {
+        'user_list': ('rest_framework.permissions.AllowAny',),
+        'user': ('rest_framework.permissions.AllowAny',)
+
+    },
+    'SERIALIZERS': {
+        'current_user': 'api.serializers.UserSerializer'
+    }
+}
 
 LANGUAGE_CODE = 'ru-ru'
 
@@ -126,12 +133,3 @@ MEDIA_URL = '/backend_media/'
 MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
-
-
-# consts
-EMAIL_LENGTH = 254
-PERSONAL_FIELDS_LENGTH = 150
-REPR_SIZE = 15
-RECIPES_NAME_SIZE = 200
-COLOR_SIZE = 7
-MIN_VALUE = 1

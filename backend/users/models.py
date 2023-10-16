@@ -1,62 +1,37 @@
-from django.conf import settings
 from django.contrib.auth.models import AbstractUser
 from django.core.validators import RegexValidator
 from django.db import models
 
+from backend.constants import EMAIL_LENGTH, PERSONAL_FIELDS_LENGTH, REPR_SIZE
+
 
 class User(AbstractUser):
-    USER = 'user'
-    ADMIN = 'admin'
-    ROLES = (
-        (USER, 'Пользователь'),
-        (ADMIN, 'Админ')
-    )
     USERNAME_FIELD = 'email'
     REQUIRED_FIELDS = ('username', 'first_name', 'last_name', 'password')
 
-    email = models.EmailField(max_length=settings.EMAIL_LENGTH,
-                              blank=False,
-                              null=False,
+    email = models.EmailField(max_length=EMAIL_LENGTH,
                               unique=True,
                               verbose_name='Электронная почта')
     username = models.CharField(
-        max_length=settings.PERSONAL_FIELDS_LENGTH,
-        blank=False,
-        null=False,
+        max_length=PERSONAL_FIELDS_LENGTH,
         validators=(RegexValidator(r'^[\w.@+-]+$'),),
         unique=True,
         verbose_name='Логин'
     )
-    first_name = models.CharField(max_length=settings.PERSONAL_FIELDS_LENGTH,
-                                  blank=False,
-                                  null=False,
+    first_name = models.CharField(max_length=PERSONAL_FIELDS_LENGTH,
                                   verbose_name='Имя')
-    last_name = models.CharField(max_length=settings.PERSONAL_FIELDS_LENGTH,
-                                 blank=False,
-                                 null=False,
+    last_name = models.CharField(max_length=PERSONAL_FIELDS_LENGTH,
                                  verbose_name='Фамилия')
-    password = models.CharField(max_length=settings.PERSONAL_FIELDS_LENGTH,
-                                blank=False,
-                                null=False,
+    password = models.CharField(max_length=PERSONAL_FIELDS_LENGTH,
                                 verbose_name='Пароль')
-    role = models.CharField(
-        max_length=max([len(verbose) for _, verbose in ROLES]),
-        choices=ROLES,
-        default=USER,
-        verbose_name='Роль'
-    )
 
     class Meta:
         verbose_name = 'Пользователь'
         verbose_name_plural = 'Пользователи'
         ordering = ('username',)
 
-    @property
-    def is_admin(self):
-        return self.role == self.ADMIN or self.is_superuser or self.is_staff
-
     def __str__(self):
-        return self.username[:settings.REPR_SIZE]
+        return self.username[:REPR_SIZE]
 
 
 class Follow(models.Model):
@@ -82,4 +57,4 @@ class Follow(models.Model):
         )
 
     def __str__(self):
-        return f"{self.user} подписан на {self.author}"
+        return f'{self.user} подписан на {self.author}'
