@@ -8,6 +8,7 @@ from .models import (Favorite, Ingredient, RecipeIngredient,
 
 class IngredientsInline(admin.TabularInline):
     model = RecipeIngredient
+    min_num = 1
 
 
 @admin.register(Recipe)
@@ -20,19 +21,25 @@ class RecipeAdmin(admin.ModelAdmin):
     search_fields = ('author', 'name',)
     inlines = (IngredientsInline,)
 
+    @admin.display(
+        description='Избранное'
+    )
     def get_favorited(self, obj):
         return obj.favorite.all().count()
 
+    @admin.display(
+        description='Ингредиенты'
+    )
     def get_ingredients(self, obj):
-        return ", ".join([p.ingredient.name
-                          for p in obj.recipe_ingredient.all()])
+        return ', '.join([recipe_ingredients.ingredient.name
+                          for recipe_ingredients
+                          in obj.recipe_ingredient.all()])
 
+    @admin.display(
+        description='Картинка'
+    )
     def get_image(self, obj):
         return mark_safe(f'<img src={obj.image.url} width="80" height="60">')
-
-    get_favorited.short_description = 'Избранное'
-    get_ingredients.short_description = 'Ингредиенты'
-    get_image.short_description = 'Картинка'
 
 
 @admin.register(Ingredient)

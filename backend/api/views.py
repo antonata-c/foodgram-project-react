@@ -1,6 +1,7 @@
 from django.db.models import Sum, Exists, OuterRef
 from django.http import HttpResponse
 from django.shortcuts import get_object_or_404
+from django_filters.rest_framework import DjangoFilterBackend
 from djoser.views import UserViewSet as DjoserUserViewSet
 from rest_framework import viewsets
 from rest_framework.decorators import action
@@ -12,13 +13,13 @@ from rest_framework.status import (HTTP_201_CREATED, HTTP_204_NO_CONTENT,
 from recipes.models import (Favorite, Ingredient, Recipe, RecipeIngredient,
                             ShoppingCart, Tag)
 from users.models import Follow, User
-from .filters import NameSearchFilter, recipe_filter
+from .filters import NameSearchFilter, RecipeFilter
 from .pagination import CustomPageNumberPagination
 from .permissions import AdminOrAuthorOrReadOnly
 from .serializers import (FavoriteSerializer, UserSerializer,
                           FollowPostSerializer, IngredientSerializer,
                           RecipeCreateSerializer, RecipeGetSerializer,
-                          ShoppingCartSerializer, TagSerializer, )
+                          ShoppingCartSerializer, TagSerializer)
 
 
 class RecipeViewSet(viewsets.ModelViewSet):
@@ -36,17 +37,13 @@ class RecipeViewSet(viewsets.ModelViewSet):
                 recipe=OuterRef('id')
             )))
     )
+    filter_backends = (DjangoFilterBackend,)
+    filterset_class = RecipeFilter
     permission_classes = (AdminOrAuthorOrReadOnly,)
     http_method_names = ['get', 'post', 'patch', 'delete']
     pagination_class = CustomPageNumberPagination
 
-    def get_queryset(self):
-        return recipe_filter(self.queryset, self.request)
-
     def favorite_shopping_post(self, request, pk, serializer):
-        if not Recipe.objects.filter(id=pk).exists():
-            return Response('Выбранного рецепта не существует!',
-                            status=HTTP_400_BAD_REQUEST)
         user_recipe_data = {'recipe': pk, 'user': request.user.pk}
         serializer_to_save = serializer(
             data=user_recipe_data
@@ -57,11 +54,9 @@ class RecipeViewSet(viewsets.ModelViewSet):
                         status=HTTP_201_CREATED)
 
     def favorite_shopping_delete(self, request, pk, model):
-        get_object_or_404(Recipe, pk=pk)
-        if model.objects.filter(user=request.user,
-                                recipe=pk).exists():
-            model.objects.get(user=request.user,
-                              recipe=pk).delete()
+        obj = model.objects.filter(user=request.user, recipe=pk)
+        if obj.exists():
+            obj.delete()
             return Response('Рецепт успешно удален',
                             status=HTTP_204_NO_CONTENT)
         return Response('Рецепта нет в списке',
@@ -137,7 +132,7 @@ class RecipeViewSet(viewsets.ModelViewSet):
             'ingredient__name', 'ingredient__measurement_unit'
         ).annotate(
             amount=Sum('amount')
-        ).order_by('id')
+        ).order_by('ingredient__name', 'amount')
         return self.form_shopping_cart(recipes_ingredients)
 
 
@@ -160,27 +155,21 @@ class UserViewSet(DjoserUserViewSet):
 
     def get_permissions(self):
         if self.action == 'me':
-            self.permission_classes = IsAuthenticated,
+            return IsAuthenticated(),
         return super().get_permissions()
 
     @action(detail=True,
             methods=('post',),
             permission_classes=(IsAuthenticated,))
-    def subscribe(self, request, **kwargs):
-        try:
-            author_id = int(kwargs.get('id'))
-        except ValueError:
-            return Response({"pk": "Id пользователя должен быть числом!"},
-                            status=HTTP_400_BAD_REQUEST)
-        get_object_or_404(User, pk=author_id)
+    def subscribe(self, request, id):
         serializer = FollowPostSerializer(
             data={
                 'user': self.request.user.pk,
-                'author': author_id
+                'author': id
             },
             context={
                 'request': request,
-                'author': author_id
+                'author': id
             }
         )
         serializer.is_valid(raise_exception=True)
@@ -189,17 +178,10 @@ class UserViewSet(DjoserUserViewSet):
                         status=HTTP_201_CREATED)
 
     @subscribe.mapping.delete
-    def unsubscribe(self, request, **kwargs):
-        try:
-            author = int(kwargs.get('id'))
-        except ValueError:
-            return Response({"pk": "Id пользователя должен быть числом!"},
-                            status=HTTP_400_BAD_REQUEST)
-        author = get_object_or_404(User, pk=author)
-        if Follow.objects.filter(user=self.request.user,
-                                 author=author).exists():
-            Follow.objects.get(user=self.request.user,
-                               author=author).delete()
+    def unsubscribe(self, request, id):
+        obj = Follow.objects.filter(user=self.request.user, author=id)
+        if obj.exists():
+            obj.delete()
             return Response('Успешная отписка',
                             status=HTTP_204_NO_CONTENT)
         return Response('Подписки не существует!',
@@ -209,9 +191,10 @@ class UserViewSet(DjoserUserViewSet):
             methods=('get',),
             permission_classes=(IsAuthenticated,))
     def subscriptions(self, request):
+        print(self.request.user.follower.values('author'))
         serializer = FollowPostSerializer(
             self.paginate_queryset(
-                Follow.objects.filter(user=self.request.user).order_by('id'),
+                self.request.user.follower.all().order_by('id'),
             ),
             context={'request': request, 'author': self.request.user.pk},
             many=True)

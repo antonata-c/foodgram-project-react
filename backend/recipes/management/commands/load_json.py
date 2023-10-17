@@ -12,17 +12,20 @@ def load_data(filename, model):
     if not os.path.exists(file_path):
         print(f'Файл по пути {file_path} не найден')
         return
-    with open(file_path, encoding='utf-8') as file:
-        data = json.load(file)
+    try:
+        with open(file_path, encoding='utf-8') as file:
+            data = json.load(file)
+    except IOError:
+        print("Что-то пошло не так. Файл уже открыт.")
+        return
+    if not file.closed:
+        file.close()
     model_data = []
     for obj_data in data:
-        try:
-            model_data.append(model(**obj_data))
-        except ValueError as error:
-            print(f'Ошибка: {error}\nЗапись не была загружена.')
-            return
+        model_data.append(model(**obj_data))
     model.objects.bulk_create(model_data)
     print(f'Все данные модели {model.__name__} были успешно загружены')
+
 
 
 class Command(BaseCommand):

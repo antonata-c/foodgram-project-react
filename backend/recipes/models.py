@@ -8,11 +8,11 @@ from users.models import User
 
 
 class Tag(models.Model):
-    name = models.CharField(max_length=RECIPES_NAME_SIZE, unique=True,
-                            verbose_name='Название тега')
-    color = ColorField(verbose_name='Цвет тега')
-    slug = models.SlugField(max_length=RECIPES_NAME_SIZE,
-                            verbose_name='Слаг тега')
+    name = models.CharField('Название тега',
+                            max_length=RECIPES_NAME_SIZE,
+                            unique=True)
+    color = ColorField('Цвет тега')
+    slug = models.SlugField('Слаг тега', max_length=RECIPES_NAME_SIZE)
 
     class Meta:
         verbose_name = 'Тег'
@@ -23,10 +23,10 @@ class Tag(models.Model):
 
 
 class Ingredient(models.Model):
-    name = models.CharField(max_length=RECIPES_NAME_SIZE,
-                            verbose_name='Название ингредиента')
-    measurement_unit = models.CharField(max_length=RECIPES_NAME_SIZE,
-                                        verbose_name='Единица измерения')
+    name = models.CharField('Название ингредиента',
+                            max_length=RECIPES_NAME_SIZE)
+    measurement_unit = models.CharField('Единица измерения',
+                                        max_length=RECIPES_NAME_SIZE)
 
     class Meta:
         verbose_name = 'Ингредиент'
@@ -46,19 +46,18 @@ class Recipe(models.Model):
                                related_name='recipes',
                                on_delete=models.CASCADE,
                                verbose_name='Автор рецепта')
-    name = models.CharField(max_length=RECIPES_NAME_SIZE,
-                            verbose_name='Название рецепта')
-    text = models.TextField(verbose_name='Текст рецепта')
-    image = models.ImageField(upload_to='recipes/images/',
-                              verbose_name='Картинка рецепта')
+    name = models.CharField('Название рецепта', max_length=RECIPES_NAME_SIZE)
+    text = models.TextField('Текст рецепта')
+    image = models.ImageField('Картинка рецепта', upload_to='recipes/images/')
     cooking_time = models.PositiveSmallIntegerField(
+        'Время приготовления',
         validators=(
             MinValueValidator(MIN_VALUE,
                               message='Значение должно быть больше 0!'),
             MaxValueValidator(MAX_P_INT_VALUE,
                               message='Значение должно быть меньше 32767!')
-        ),
-        verbose_name='Время приготовления')
+        )
+    )
     ingredients = models.ManyToManyField(Ingredient,
                                          through='RecipeIngredient',
                                          verbose_name='Ингредиенты рецепта')
@@ -66,7 +65,7 @@ class Recipe(models.Model):
                                   verbose_name='Теги рецепта')
 
     pub_date = models.DateTimeField(
-        verbose_name='Дата публикации рецепта',
+        'Дата публикации рецепта',
         auto_now_add=True
     )
 
@@ -86,19 +85,21 @@ class RecipeIngredient(models.Model):
                                    null=False,
                                    related_name='recipe_ingredient',
                                    on_delete=models.CASCADE)
-    amount = models.PositiveSmallIntegerField(validators=(
-        MinValueValidator(MIN_VALUE,
-                          message='Значение должно быть больше 0!'),
-        MaxValueValidator(MAX_P_INT_VALUE,
-                          message='Значение должно быть меньше 32767!')
-    ))
+    amount = models.PositiveSmallIntegerField(
+        'Количество ингредиента',
+        validators=(
+            MinValueValidator(MIN_VALUE,
+                              message='Значение должно быть больше 0!'),
+            MaxValueValidator(MAX_P_INT_VALUE,
+                              message='Значение должно быть меньше 32767!')
+        ))
 
     class Meta:
         verbose_name = 'Ингредиент в рецепте'
         verbose_name_plural = 'Ингредиенты в рецептах'
 
 
-class FavoriteShoppingAbstractModel(models.Model):
+class UserRecipeAbstractModel(models.Model):
     user = models.ForeignKey(
         User,
         on_delete=models.CASCADE,
@@ -115,22 +116,22 @@ class FavoriteShoppingAbstractModel(models.Model):
         constraints = (
             models.UniqueConstraint(
                 fields=['user', 'recipe'],
-                name='unique_user_recipe'),
+                name='%(class)s_unique_user_recipe'),
         )
 
     def __str__(self):
-        return f"У {self.user} в списке находится {self.recipe}"
+        return f'У {self.user} в списке находится {self.recipe}'
 
 
-class Favorite(FavoriteShoppingAbstractModel):
-    class Meta:
+class Favorite(UserRecipeAbstractModel):
+    class Meta(UserRecipeAbstractModel.Meta):
         verbose_name = 'Избранное'
         verbose_name_plural = 'Избранное'
         default_related_name = 'favorite'
 
 
-class ShoppingCart(FavoriteShoppingAbstractModel):
-    class Meta:
+class ShoppingCart(UserRecipeAbstractModel):
+    class Meta(UserRecipeAbstractModel.Meta):
         verbose_name = 'Список покупок'
         verbose_name_plural = 'Списки покупок'
         default_related_name = 'shopping_cart'

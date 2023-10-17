@@ -5,6 +5,7 @@ from rest_framework import serializers
 from rest_framework.status import HTTP_400_BAD_REQUEST
 from rest_framework.validators import ValidationError
 
+from backend.constants import MIN_VALUE, MAX_P_INT_VALUE
 from recipes.models import (Favorite, Ingredient, Recipe, RecipeIngredient,
                             ShoppingCart, Tag)
 from users.models import Follow, User
@@ -50,13 +51,8 @@ class UserSerializer(serializers.ModelSerializer):
             'username',
             'first_name',
             'last_name',
-            'password',
             'is_subscribed',
         )
-        extra_kwargs = {
-            'password': {'write_only': True},
-        }
-        read_only_fields = ("is_subscribed",)
 
 
 class IngredientSerializer(serializers.ModelSerializer):
@@ -90,8 +86,8 @@ class RecipeGetSerializer(serializers.ModelSerializer):
     )
     tags = TagSerializer(many=True)
     author = UserSerializer()
-    is_favorited = serializers.SerializerMethodField()
-    is_in_shopping_cart = serializers.SerializerMethodField()
+    is_favorited = serializers.BooleanField(default=0)
+    is_in_shopping_cart = serializers.BooleanField(default=0)
 
     class Meta:
         model = Recipe
@@ -103,30 +99,13 @@ class RecipeGetSerializer(serializers.ModelSerializer):
             'text', 'cooking_time'
         )
 
-    def get_is_favorited(self, obj):
-        request = self.context.get('request')
-        if request.method == 'POST':
-            return False
-        return (request
-                and request.user.is_authenticated
-                and obj.is_favorited)
-
-    def get_is_in_shopping_cart(self, obj):
-        request = self.context.get('request')
-        if request.method == 'POST':
-            return False
-        return (request
-                and request.user.is_authenticated
-                and obj.is_in_shopping_cart)
-
 
 class RecipeIngredientSerializer(serializers.ModelSerializer):
     id = serializers.PrimaryKeyRelatedField(
         queryset=Ingredient.objects.all()
     )
-    amount = serializers.IntegerField(validators=(
-        MinValueValidator(1, 'Количество ингредиента должно быть не менее 1!'),
-    ))
+    amount = serializers.IntegerField(min_value=MIN_VALUE,
+                                      max_value=MAX_P_INT_VALUE)
 
     class Meta:
         model = RecipeIngredient
@@ -144,9 +123,8 @@ class RecipeCreateSerializer(serializers.ModelSerializer):
     author = serializers.HiddenField(
         default=serializers.CurrentUserDefault()
     )
-    cooking_time = serializers.IntegerField(validators=(
-        MinValueValidator(1, 'Время приготовления должно быть не менее 1!'),
-    ))
+    cooking_time = serializers.IntegerField(min_value=MIN_VALUE,
+                                            max_value=MAX_P_INT_VALUE)
 
     class Meta:
         model = Recipe
@@ -168,18 +146,14 @@ class RecipeCreateSerializer(serializers.ModelSerializer):
 
     def add_recipes_ingredients_tags(self, recipe, ingredients, tags):
         recipe.tags.set(tags)
+        recipe_ingredients = []
         for ingredient in ingredients:
-            RecipeIngredient.objects.update_or_create(
+            recipe_ingredients.append(RecipeIngredient(
                 ingredient=ingredient.get('id'),
                 recipe=recipe,
                 amount=ingredient.get('amount')
-            )
-
-        # в джанге 4.1 можно добавить параметр update_conflicts и нормально
-        # использовать в духе bulk_update_or_create,
-        # есть ли решение в 3.2.3 или оставить как сделано выше?
-        # RecipeIngredient.objects.bulk_create(recipe_ingredients,
-        #                                      update_conflicts=True)
+            ))
+        RecipeIngredient.objects.bulk_create(recipe_ingredients)
 
     def create(self, validated_data):
         tags = validated_data.pop('tags')
@@ -201,6 +175,9 @@ class RecipeCreateSerializer(serializers.ModelSerializer):
             raise ValidationError(
                 {'tags': 'Поле не может быть пустым'}
             )
+        if list(set(data.get('tags'))) != data.get('tags'):
+            raise ValidationError(
+                {'tags': 'В поле не может быть повторений'})
         if not data.get('ingredients'):
             raise ValidationError(
                 {'ingredients': 'Поле не может быть пустым'}
@@ -218,12 +195,6 @@ class RecipeCreateSerializer(serializers.ModelSerializer):
             raise ValidationError(
                 {'image': 'Поле не может быть пустым'}
             )
-        return value
-
-    def validate_tags(self, value):
-        if list(set(value)) != value:
-            raise ValidationError(
-                {'tags': 'В поле не может быть повторений'})
         return value
 
 
@@ -255,15 +226,12 @@ class FollowGetSerializer(UserSerializer):
     def get_recipes(self, obj):
         request = self.context.get('request')
         recipes_limit = request.query_params.get('recipes_limit')
-        queryset = get_object_or_404(User,
-                                     pk=self.context.get('author')
-                                     ).recipes.all()
+        queryset = obj.recipes.all()
         if recipes_limit:
             try:
-                limit = int(request.query_params.get('recipes_limit'))
+                queryset = queryset[:int(recipes_limit)]
             except ValueError:
-                return {"recipes_limit": "Поле должно быть числовым!"}
-            queryset = queryset[:limit]
+                pass
         return RecipeShortSerializer(
             queryset, context=self.context, many=True
         ).data
