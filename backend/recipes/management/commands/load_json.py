@@ -27,7 +27,6 @@ def load_data(filename, model):
     print(f'Все данные модели {model.__name__} были успешно загружены')
 
 
-
 class Command(BaseCommand):
     """Класс команды для загрузки в базу данных."""
 
