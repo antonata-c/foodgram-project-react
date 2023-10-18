@@ -102,8 +102,16 @@ class RecipeIngredientSerializer(serializers.ModelSerializer):
     id = serializers.PrimaryKeyRelatedField(
         queryset=Ingredient.objects.all()
     )
-    amount = serializers.IntegerField(min_value=MIN_VALUE,
-                                      max_value=MAX_P_INT_VALUE)
+    amount = serializers.IntegerField(error_messages={
+        'invalid': 'Введено неверное число.',
+        'max_value':
+            f'Убедитесь что значение меньше либо равно {MAX_P_INT_VALUE}.',
+        'min_value':
+            f'Убедитесь что значение больше либо равно {MIN_VALUE}.',
+        'max_string_length': 'Строковое значение слишком длинное.'
+    },
+        min_value=MIN_VALUE,
+        max_value=MAX_P_INT_VALUE)
 
     class Meta:
         model = RecipeIngredient
@@ -142,21 +150,20 @@ class RecipeCreateSerializer(serializers.ModelSerializer):
         return RecipeGetSerializer(instance,
                                    context=self.context).data
 
-    def add_recipes_ingredients_tags(self, recipe, ingredients, tags):
+    @staticmethod
+    def add_recipes_ingredients_tags(recipe, ingredients, tags):
         recipe.tags.set(tags)
-        recipe_ingredients = []
-        for ingredient in ingredients:
-            recipe_ingredients.append(RecipeIngredient(
+        recipe_ingredients = [
+            RecipeIngredient(
                 ingredient=ingredient.get('id'),
                 recipe=recipe,
                 amount=ingredient.get('amount')
-            ))
+            ) for ingredient in ingredients]
         RecipeIngredient.objects.bulk_create(recipe_ingredients)
 
     def create(self, validated_data):
         tags = validated_data.pop('tags')
         ingredients = validated_data.pop('ingredients')
-        # Тут ведь автор уже есть в validated_data
         recipe = Recipe.objects.create(**validated_data)
         self.add_recipes_ingredients_tags(recipe, ingredients, tags)
         return recipe
@@ -169,19 +176,21 @@ class RecipeCreateSerializer(serializers.ModelSerializer):
         return super().update(instance, validated_data)
 
     def validate(self, data):
-        if not data.get('tags'):
+        tags = data.get('tags')
+        if not tags:
             raise ValidationError(
                 {'tags': 'Поле не может быть пустым'}
             )
-        if list(set(data.get('tags'))) != data.get('tags'):
+        if list(set(tags)) != tags:
             raise ValidationError(
                 {'tags': 'В поле не может быть повторений'})
-        if not data.get('ingredients'):
+        ingredients = data.get('ingredients')
+        if not ingredients:
             raise ValidationError(
                 {'ingredients': 'Поле не может быть пустым'}
             )
         tmp_ingredients = [Ingredient(ingredient.get('id'))
-                           for ingredient in data.get('ingredients')]
+                           for ingredient in ingredients]
         if list(set(tmp_ingredients)) != tmp_ingredients:
             raise ValidationError(
                 {'ingredients': 'В поле не может быть повторений'}

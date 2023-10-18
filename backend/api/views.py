@@ -18,7 +18,8 @@ from .permissions import AdminOrAuthorOrReadOnly
 from .serializers import (FavoriteSerializer, UserSerializer,
                           FollowPostSerializer, IngredientSerializer,
                           RecipeCreateSerializer, RecipeGetSerializer,
-                          ShoppingCartSerializer, TagSerializer)
+                          ShoppingCartSerializer, TagSerializer,
+                          FollowGetSerializer)
 
 
 class RecipeViewSet(viewsets.ModelViewSet):
@@ -26,21 +27,25 @@ class RecipeViewSet(viewsets.ModelViewSet):
         Recipe.objects
         .select_related('author')
         .prefetch_related('tags', 'ingredients')
-        .annotate(
-            is_favorited=Exists(Favorite.objects.filter(
-                user=OuterRef('favorite__user'),
-                recipe=OuterRef('id')
-            )),
-            is_in_shopping_cart=Exists(ShoppingCart.objects.filter(
-                user=OuterRef('shopping_cart__user'),
-                recipe=OuterRef('id')
-            )))
     )
     filter_backends = (DjangoFilterBackend,)
     filterset_class = RecipeFilter
     permission_classes = (AdminOrAuthorOrReadOnly,)
     http_method_names = ['get', 'post', 'patch', 'delete']
     pagination_class = CustomPageNumberPagination
+
+    def get_queryset(self):
+        if self.request.user.is_authenticated:
+            return self.queryset.annotate(
+                is_favorited=Exists(Favorite.objects.filter(
+                    user=OuterRef('favorite__user'),
+                    recipe=OuterRef('id')
+                )),
+                is_in_shopping_cart=Exists(ShoppingCart.objects.filter(
+                    user=OuterRef('shopping_cart__user'),
+                    recipe=OuterRef('id')
+                )))
+        return self.queryset
 
     def favorite_shopping_post(self, request, pk, serializer):
         user_recipe_data = {'recipe': pk, 'user': request.user.pk}
@@ -190,10 +195,11 @@ class UserViewSet(DjoserUserViewSet):
             methods=('get',),
             permission_classes=(IsAuthenticated,))
     def subscriptions(self, request):
-        print(self.request.user.follower.values('author'))
-        serializer = FollowPostSerializer(
+        serializer = FollowGetSerializer(
             self.paginate_queryset(
-                self.request.user.follower.all().order_by('id'),
+                User.objects.filter(
+                    following__user=self.request.user
+                ).order_by('id'),
             ),
             context={'request': request, 'author': self.request.user.pk},
             many=True)

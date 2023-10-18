@@ -21,23 +21,17 @@ class RecipeAdmin(admin.ModelAdmin):
     search_fields = ('author', 'name',)
     inlines = (IngredientsInline,)
 
-    @admin.display(
-        description='Избранное'
-    )
+    @admin.display(description='Избранное')
     def get_favorited(self, obj):
         return obj.favorite.all().count()
 
-    @admin.display(
-        description='Ингредиенты'
-    )
+    @admin.display(description='Ингредиенты')
     def get_ingredients(self, obj):
         return ', '.join([recipe_ingredients.ingredient.name
                           for recipe_ingredients
                           in obj.recipe_ingredient.all()])
 
-    @admin.display(
-        description='Картинка'
-    )
+    @admin.display(description='Картинка')
     def get_image(self, obj):
         return mark_safe(f'<img src={obj.image.url} width="80" height="60">')
 
@@ -68,7 +62,7 @@ class RecipeIngredientAdmin(admin.ModelAdmin):
 class FavoriteAdmin(admin.ModelAdmin):
     list_display = ('user', 'recipe')
     list_filter = ('user',)
-    list_display_links = ('recipe', )
+    list_display_links = ('recipe',)
     search_fields = ('recipe',)
 
 
