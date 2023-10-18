@@ -189,9 +189,8 @@ class RecipeCreateSerializer(serializers.ModelSerializer):
             raise ValidationError(
                 {'ingredients': 'Поле не может быть пустым'}
             )
-        tmp_ingredients = [Ingredient(ingredient.get('id'))
-                           for ingredient in ingredients]
-        if list(set(tmp_ingredients)) != tmp_ingredients:
+        tmp_ingredients = [ingredient.get('id') for ingredient in ingredients]
+        if len(set(tmp_ingredients)) != len(tmp_ingredients):
             raise ValidationError(
                 {'ingredients': 'В поле не может быть повторений'}
             )

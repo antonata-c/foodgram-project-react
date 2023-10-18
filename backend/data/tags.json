@@ -6,22 +6,22 @@
   },
   {
     "name": "Холодное",
-    "color": "#FF0000",
+    "color": "#3c89d0",
     "slug": "cold"
   },
   {
     "name": "Салат",
-    "color": "#FF0000",
+    "color": "#008200",
     "slug": "salad"
   },
   {
     "name": "Суп",
-    "color": "#FF0000",
+    "color": "#FF890F",
     "slug": "soup"
   },
   {
     "name": "Десерт",
-    "color": "#FF0000",
+    "color": "#F5F5CF",
     "slug": "dessert"
   }
 ]
